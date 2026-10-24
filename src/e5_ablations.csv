@@ -1,0 +1,5 @@
+cross_paths,path_loss_exponent,n_geometries,exact_recovery_rate
+False,1.0,100,1.0
+False,2.0,100,0.76
+True,1.0,100,0.0
+True,2.0,100,0.0
