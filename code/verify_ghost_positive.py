@@ -2,16 +2,16 @@
 
 论文说鬼影很少见, 所以一个永远返回 False 的检测器放到随机几何上看起来
 也"对". 为了说明检测器不是摆设, 这里手工造几个一定存在鬼影的布局,
-看暴力法和快速法是不是都能报出来.
+看暴力法和快速法是不是都能报出来
 """
 from __future__ import annotations
 import sys
 from pathlib import Path
 from itertools import permutations, product
 import numpy as np
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from isac_dfs.phase2_localize import association_consistent, refine_position
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from phase2_localize import association_consistent, refine_position
 from run_experiments import _has_ghost_efficient
 
 
@@ -48,11 +48,11 @@ print("（这是经典的鬼影目标构造方式）")
 print("=" * 72)
 bs = np.array([[0.0, 0.0], [200.0, 0.0], [0.0, 200.0], [200.0, 200.0]])
 # 两个目标关于方形中心镜像摆放: 这时候交换着配一遍也能闭合,
-# 于是生成镜像点, 这就是一个真的鬼影.
+# 于是生成镜像点, 这就是一个真的鬼影
 t1 = np.array([60.0, 70.0])
 t2 = np.array([140.0, 130.0])
 targets = np.array([t1, t2])
-# 精确构造距离集合: 第 m 个基站看到的是它到 t1 和 t2 的距离.
+# 精确构造距离集合: 第 m 个基站看到的是它到 t1 和 t2 的距离
 clean = np.zeros((4, 2))
 for m in range(4):
     r = np.linalg.norm(bs[m] - targets, axis=1)
@@ -71,9 +71,9 @@ print()
 print("=" * 72)
 print("正控制 2：显式镜像构造（保证存在鬼影）")
 print("=" * 72)
-# 两个目标关于原点对称摆, 三个基站摆在以原点为中心的圆周上.
+# 两个目标关于原点对称摆, 三个基站摆在以原点为中心的圆周上
 # 这样有 r_1(t) == r_2(-t), 所以在每个基站上把两个距离对调,
-# 得到的是镜像的那一对, 它本身也是一个自洽解, 于是就是鬼影.
+# 得到的是镜像的那一对, 它本身也是一个自洽解, 于是就是鬼影
 ang = np.array([0.0, 2*np.pi/3, 4*np.pi/3])
 bs2 = 150.0 * np.column_stack([np.cos(ang), np.sin(ang)])
 tA = np.array([40.0, 25.0])

@@ -1,7 +1,7 @@
-"""严格枚举校验: 快速路径探索的候选集合与暴力穷举完全相同.
+"""严格枚举校验: 快速路径探索的候选集合与暴力穷举完全相同
 
-不只看最终挑中的那个解, 而是要求两边枚举出来的候选个数 (去掉目标重编号
-的冗余之后) 一致, 并且最优值也一样.
+不只看最终挑中的那个解, 而是要求两边枚举出来的候选个数(去掉目标重编号
+的冗余之后) 一致, 并且最优值也一样
 """
 from __future__ import annotations
 import sys, math, time
@@ -9,10 +9,10 @@ from pathlib import Path
 from itertools import product, permutations
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from isac_dfs.geometry import random_geometry, select_bs_subset, has_range_collision
-from isac_dfs.phase1_range import OFDMConfig, C0, range_from_tap_index, tap_index_from_range
-from isac_dfs.phase2_localize import (
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from geometry import random_geometry, select_bs_subset, has_range_collision
+from phase1_range import OFDMConfig, C0, range_from_tap_index, tap_index_from_range
+from phase2_localize import (
     triangle_feasible, refine_position, ml_data_association,
 )
 

@@ -4,10 +4,10 @@ import sys, time
 from pathlib import Path
 from itertools import product
 import numpy as np
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from isac_dfs.geometry import random_geometry, select_bs_subset, has_range_collision
-from isac_dfs.phase1_range import OFDMConfig, C0, range_from_tap_index, tap_index_from_range
-from isac_dfs.phase2_localize import (
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from geometry import random_geometry, select_bs_subset, has_range_collision
+from phase1_range import OFDMConfig, C0, range_from_tap_index, tap_index_from_range
+from phase2_localize import (
     ml_data_association, pairwise_position_errors, triangle_feasible, refine_position,
 )
 
@@ -76,7 +76,7 @@ for k in (3, 4, 5):
         r_,c_ = linear_sum_assignment(cost)
         dev = cost[r_,c_].max()
         # 候选个数: 暴力法枚举带标签的指派, 其中有 K! 倍的重复;
-        # 快速路径把第 0 站的顺序钉死, 所以期望 快速 == 暴力 / K!.
+        # 快速路径把第 0 站的顺序钉死, 所以期望 快速 == 暴力 / K!
         import math
         ratio = npart_b / max(res.n_candidates, 1)
         flag = "一致" if dev < 1e-6 else "有差异"

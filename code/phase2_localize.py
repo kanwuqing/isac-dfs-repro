@@ -1,11 +1,11 @@
-"""阶段二: 无设备感知的定位与数据关联.
+"""阶段二: 无设备感知的定位与数据关联
 
 复现论文 Sec. V 与 Sec. VI. 实现了两种情形:
 
-1. 完美测距( Sec. V). 每个基站 m 提供一个集合 D_m, 不带目标标签; 如果某个候选
-   关联算出的 M 个圆不能交于同一点, 这个候选就是鬼影目标.
-2. 不完美测距( Sec. VI). 论文的最大似然算法: 枚举前 3 个基站的可行三元组,
-   用匈牙利算法向其余基站扩展, 最后按残差总和取最小.
+1. 完美测距(Sec. V). 每个基站 m 提供一个集合 D_m, 不带目标标签; 如果某个候选
+   关联算出的 M 个圆不能交于同一点, 这个候选就是鬼影目标
+2. 不完美测距(Sec. VI). 论文的最大似然算法: 枚举前 3 个基站的可行三元组,
+   用匈牙利算法向其余基站扩展, 最后按残差总和取最小
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from typing import List, Optional, Sequence, Tuple
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from .geometry import trilaterate_linear
+from geometry import trilaterate_linear
 
 
 def refine_position(
@@ -28,13 +28,13 @@ def refine_position(
     max_iter: int = 50,
     tol: float = 0.05,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """用阻尼高斯-牛顿法精修目标位置.
+    """用阻尼高斯-牛顿法精修目标位置
 
-    对应官方 coorest.m: 从线性三边定位结果出发反复迭代, 直到步长范数小于 tol.
-    J^T J 只有 2x2, 所以正规方程用显式闭式求逆来解( 几何接近降秩时加阻尼);
-    对 2x2 系统这与伪逆等价, 但快好几倍, 而最大似然算法会调用本函数很多次.
+    对应官方 coorest.m: 从线性三边定位结果出发反复迭代, 直到步长范数小于 tol
+    J^T J 只有 2x2, 所以正规方程用显式闭式求逆来解(几何接近降秩时加阻尼);
+    对 2x2 系统这与伪逆等价, 但快好几倍, 而最大似然算法会调用本函数很多次
 
-    返回位置和残差向量, 残差元素为 | |x-a_m| - d_m |.
+    返回位置和残差向量, 残差元素为 | |x-a_m| - d_m |
     """
     ranges = np.asarray(ranges, dtype=float).ravel()
     if x0 is None:
@@ -93,10 +93,10 @@ def association_consistent(
     bs_xy: np.ndarray,
     tol: float = 1e-6,
 ) -> bool:
-    """这 M 个圆是否交于同一点, 见论文 Sec. V-A.
+    """这 M 个圆是否交于同一点, 见论文 Sec. V-A
 
     一个候选关联是一致的, 当且仅当存在一点 x 使所有 m 都满足 |x - a_m| = d_m;
-    这里用最小二乘解出位置再检查残差来判断.
+    这里用最小二乘解出位置再检查残差来判断
     """
     if len(ranges) < 3:
         return True  # 少于三个圆谈不上交不交
@@ -110,10 +110,10 @@ def ghost_target_exists(
     k_targets: int,
     tol: float = 1e-6,
 ) -> Tuple[bool, Optional[np.ndarray]]:
-    """搜索除真实关联之外是否还存在一致的关联.
+    """搜索除真实关联之外是否还存在一致的关联
 
-    在完美测距下鬼影目标存在, 当且仅当某个关联( 每个基站取一个距离, 且都来自
-    不同目标)也一致, 但对应到另一个物理点. 返回是否存在和一个示例关联.
+    在完美测距下鬼影目标存在, 当且仅当某个关联(每个基站取一个距离, 且都来自
+    不同目标)也一致, 但对应到另一个物理点. 返回是否存在和一个示例关联
     """
     m_bs = len(bs_ranges)
     # 对每个基站, 枚举它 K 个距离的所有排列
@@ -140,10 +140,10 @@ def _matches_known_target(
     bs_xy: np.ndarray,
     tol: float = 1e-3,
 ) -> bool:
-    """判断 x 是不是 K 个真实目标位置之一.
+    """判断 x 是不是 K 个真实目标位置之一
 
     真实目标位置可以从一致的对角关联重建出来; 因为测距是完美的, 真目标恰好就是
-    那些一致的关联, 所以按位置比对就能认出已经见过的点.
+    那些一致的关联, 所以按位置比对就能认出已经见过的点
     """
     k = len(bs_ranges[0])
     for kk in range(k):
@@ -171,10 +171,10 @@ def triangle_feasible(
     bs_xy: np.ndarray,
     delta: float,
 ) -> bool:
-    """带容差 delta 的三角不等式检验, 见论文 Sec. VI-A.
+    """带容差 delta 的三角不等式检验, 见论文 Sec. VI-A
 
     对第 i, j 两个基站来说, 两个距离之差不能超过站间距离加容差, 之和也不能
-    小于站间距离减容差, 否则这三个距离根本围不成三角形.
+    小于站间距离减容差, 否则这三个距离根本围不成三角形
     """
     for i in range(3):
         for j in range(i + 1, 3):
@@ -196,19 +196,19 @@ def ml_data_association(
     delta_factor: float = 3.0,
     max_error: Optional[float] = None,
 ) -> AssociationResult:
-    """最大似然联合数据关联与定位, 见论文 Sec. VI-A 与 model.m.
+    """最大似然联合数据关联与定位, 见论文 Sec. VI-A 与 model.m
 
-    bs_ranges 是各基站的距离集合( 不带标签), sigma_d 是测距误差的标准差,
+    bs_ranges 是各基站的距离集合(不带标签), sigma_d 是测距误差的标准差,
     论文的量化模型里误差上界是 Delta_d, 所以 sigma_d 取 Delta_d / 2.
     feasibility_factor 决定残差预算, delta_factor 决定三角不等式容差,
-    max_error 给了就直接当绝对预算用.
+    max_error 给了就直接当绝对预算用
     """
     m_bs = len(bs_ranges)
     k_tg = len(bs_ranges[0])
     delta = delta_factor * sigma_d  # 三角不等式容差
 
     if max_error is None:
-        # 量化误差上界为 Delta_d, 预算取 M * Delta_d 与误差量级匹配.
+        # 量化误差上界为 Delta_d, 预算取 M * Delta_d 与误差量级匹配
         budget = m_bs * 2.0 * sigma_d * feasibility_factor
     else:
         budget = float(max_error)
@@ -345,9 +345,9 @@ def _to_index_assignment(
 
 
 def pairwise_position_errors(est: np.ndarray, true: np.ndarray) -> np.ndarray:
-    """用最优( 匈牙利)配对把估计位置与真实位置对上, 返回误差.
+    """用最优(匈牙利)配对把估计位置与真实位置对上, 返回误差
 
-    目标本身无标签, 所以按最小代价指派来打分, 与官方 diffdist.m 的做法一致.
+    目标本身无标签, 所以按最小代价指派来打分, 与官方 diffdist.m 的做法一致
     """
     k = true.shape[0]
     cost = np.linalg.norm(est[:, None, :] - true[None, :, :], axis=-1)  # 两两距离表

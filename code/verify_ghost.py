@@ -1,7 +1,7 @@
-"""用暴力置换枚举校验高效鬼影检测器.
+"""用暴力置换枚举校验高效鬼影检测器
 
 对应关系: brute_ghost 为参考实现, _has_ghost_efficient 为被测实现,
-两者对同一批几何给出相同判定即视为一致.
+两者对同一批几何给出相同判定即视为一致
 """
 
 from __future__ import annotations
@@ -13,20 +13,20 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from isac_dfs.geometry import (  # noqa: E402
+from geometry import (  # noqa: E402
     has_range_collision,
     random_geometry,
     select_bs_subset,
 )
-from isac_dfs.phase1_range import (  # noqa: E402
+from phase1_range import (  # noqa: E402
     C0,
     range_from_tap_index,
     tap_index_from_range,
 )
-from isac_dfs.phase2_localize import (  # noqa: E402
+from phase2_localize import (  # noqa: E402
     association_consistent,
     refine_position,
 )
@@ -63,8 +63,8 @@ def brute_ghost(clean, bs_xy, tol=1e-6):
     return False
 
 
-# 暴力法的代价随 (K!)^(M-1) 增长: M=4 且 K=4 时需 216 组置换, 单次约 35 秒.
-# 网格取 M=3 的 K=2/3/4 与 M=4 的 K=2/3, 同时覆盖多基站与多目标两个维度.
+# 暴力法的代价随(K!)^(M-1) 增长: M=4 且 K=4 时需 216 组置换, 单次约 35 秒
+# 网格取 M=3 的 K=2/3/4 与 M=4 的 K=2/3, 同时覆盖多基站与多目标两个维度
 GRID = [(3, 2), (3, 3), (3, 4), (4, 2), (4, 3)]
 
 

@@ -1,8 +1,8 @@
-"""由 results/data/ 下的 CSV 重新生成全部图.
+"""由 src/ 下的 CSV 重新生成全部图
 
-运行: python scripts/make_figures.py
-所有图写入 results/figures/ 与 report/figures/,PNG 为 300 dpi, 同时导出 PDF.
-图中所有文字均为中文.
+运行: python code/make_figures.py
+所有图写入 src/,PNG 为 300 dpi, 同时导出 PDF
+图中所有文字均为中文
 """
 
 from __future__ import annotations
@@ -18,12 +18,11 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / "results" / "data"
-FIGS = ROOT / "results" / "figures"
-REPORT_FIGS = ROOT / "report" / "figures"
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+DATA = ROOT / "src"
+FIGS = ROOT / "src"
 FIGS.mkdir(parents=True, exist_ok=True)
-REPORT_FIGS.mkdir(parents=True, exist_ok=True)
 
 plt.rcParams.update(
     {
@@ -54,9 +53,8 @@ COLORS = {1.5: "#1f77b4", 2.0: "#ff7f0e", 2.5: "#2ca02c"}
 def _save(fig, name: str) -> None:
     for ext in ("png", "pdf"):
         fig.savefig(FIGS / f"{name}.{ext}", bbox_inches="tight")
-        fig.savefig(REPORT_FIGS / f"{name}.{ext}", bbox_inches="tight")
     plt.close(fig)
-    print(f"  已写入 results/figures/{name}.png、report/figures/{name}.png")
+    print(f"  已写入 src/{name}.png、src/{name}.pdf")
 
 
 def _load(name: str) -> pd.DataFrame | None:
@@ -136,7 +134,7 @@ def fig_ghost(df: pd.DataFrame) -> None:
         sub = df[df["M"] == m].sort_values("K")
         y = sub["ghost_prob"].to_numpy(dtype=float)
         n = sub["n_geometries"].to_numpy(dtype=float)
-        # 观测到 0 次时, 画 95% 上界( 三倍法则 3/n)
+        # 观测到 0 次时, 画 95% 上界(三倍法则 3/n)
         y_plot = np.where(y > 0, y, 3.0 / n)
         ax.semilogy(sub["K"], y_plot, "o-", label=f"M={m}")
     ax.set_xlabel("目标个数 K")
@@ -196,13 +194,12 @@ def fig_ablation(df: pd.DataFrame) -> None:
 
 def fig_summary_scatter() -> None:
     """定性定位散点图: 真实位置与估计位置对比."""
-    sys.path.insert(0, str(ROOT / "src"))
-    from isac_dfs.geometry import random_geometry, select_bs_subset, has_range_collision
-    from isac_dfs.phase1_range import (
+    sys.path.insert(0, str(HERE))
+    from geometry import random_geometry, select_bs_subset, has_range_collision
+    from phase1_range import (
         C0, range_from_tap_index, tap_index_from_range,
     )
-    from isac_dfs.phase2_localize import ml_data_association
-    sys.path.insert(0, str(ROOT / "scripts"))
+    from phase2_localize import ml_data_association
     from run_experiments import make_cfg, REGION
 
     fig, axes = plt.subplots(1, 3, figsize=(14, 4.6), sharey=False)
@@ -263,7 +260,7 @@ def fig_rmse_vs_deltad() -> None:
 
 
 def main() -> int:
-    print("正在由 results/data/ 生成图像 ...")
+    print("正在由 src/ 生成图像 ...")
     d1 = _load("e1_error_prob_vs_K")
     if d1 is not None:
         fig_error_prob_vs_K(d1)

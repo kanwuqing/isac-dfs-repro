@@ -1,8 +1,8 @@
-"""实验驱动: 复现论文的数值结果.
+"""实验驱动: 复现论文的数值结果
 
 实验列表
 --------
-E1  误差概率随目标数 K 变化 : B=100 MHz,M=4 下的定位误差概率( 阈值 1.5/2/2.5 米)
+E1  误差概率随目标数 K 变化 : B=100 MHz,M=4 下的定位误差概率(阈值 1.5/2/2.5 米)
 E2  误差概率随带宽 B 变化   : 误差概率与 RMSE 随系统带宽变化, 论文的核心结论
 E3  鬼影概率随 K 变化      : **完美测距**下的鬼影目标存在概率, 覆盖多个 M
 E4  阶段一测距误差          : 阶段一距离单元恢复率与测距误差随带宽变化
@@ -28,52 +28,53 @@ from typing import Dict, List, Sequence
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+sys.path.insert(0, str(HERE))
 
-from isac_dfs.geometry import (  # noqa: E402
+from geometry import (  # noqa: E402
     random_geometry,
     select_bs_subset,
     has_range_collision,
 )
-from isac_dfs.phase1_range import (  # noqa: E402
+from phase1_range import (  # noqa: E402
     C0,
     OFDMConfig,
     phase1_range_estimation,
     range_from_tap_index,
     tap_index_from_range,
 )
-from isac_dfs.phase2_localize import (  # noqa: E402
+from phase2_localize import (  # noqa: E402
     ml_data_association,
     pairwise_position_errors,
     association_consistent,
 )
 
-RESULTS = ROOT / "results"
-DATA = RESULTS / "data"
-FIGS = RESULTS / "figures"
+# CSV 与图都落在仓库的 src/ 下, 日志落在 logs/
+DATA = ROOT / "src"
+FIGS = ROOT / "src"
 LOGS = ROOT / "logs"
 for d in (DATA, FIGS, LOGS):
     d.mkdir(parents=True, exist_ok=True)
 
 THRESHOLDS = (1.5, 2.0, 2.5)
 
-# 正式结果使用的样本数.低于这个数且没带 --tag 时, save() 会拒绝覆盖已有 CSV.
+# 正式结果使用的样本数.低于这个数且没带 --tag 时, save() 会拒绝覆盖已有 CSV
 REFERENCE_TRIALS = 300
 
 # ------------------------------------------------------------------
 # 参考配置.R=240 米与官方 `model.m` 一致; 无模糊窗口开得足够大
-# (L=512,Q=1024 个单元), 使测过的任何带宽下都不会发生目标混叠.
+# (L=512,Q=1024 个单元), 使测过的任何带宽下都不会发生目标混叠
 # ------------------------------------------------------------------
 REGION = 240.0
 
 
 def make_cfg(bandwidth: float, k_targets: int, m_bs: int = 4) -> OFDMConfig:
-    """按给定带宽与目标个数构造一份配置.
+    """按给定带宽与目标个数构造一份配置
 
-    N 固定 1024, 子载波间隔按 df = B/N 反推, 所以 B = N*df 是精确的.
+    N 固定 1024, 子载波间隔按 df = B/N 反推, 所以 B = N*df 是精确的
     L 取能覆盖整个区域的最小值, 即 L >= 2*(R*sqrt(2))*B/c0,
-    其中区域对角线决定最长的往返距离. 这样最小二乘的字典矩阵尽量小.
+    其中区域对角线决定最长的往返距离. 这样最小二乘的字典矩阵尽量小
     """
     region_diag = REGION * np.sqrt(2.0)
     l_needed = int(np.ceil(2.0 * region_diag * bandwidth / C0)) + 2
@@ -100,11 +101,11 @@ def sample_geometry(
     rng: np.random.Generator,
     max_attempts: int = 20000,
 ) -> "object | None":
-    """抽一个满足论文可分辨性假设的几何布局.
+    """抽一个满足论文可分辨性假设的几何布局
 
     剔除条件, 对应官方 `model.m` 里的 same_range 检验:
       * 每个距离都落在无模糊窗口以内;
-      * 每个基站上 K 个距离各自落在不同的单元, 即 K 条路径可分辨.
+      * 每个基站上 K 个距离各自落在不同的单元, 即 K 条路径可分辨
     """
     limit = unambiguous_limit(cfg)
     for _ in range(max_attempts):
@@ -148,8 +149,8 @@ def exp_error_prob_vs_K(trials: int, bandwidth: float, seed: int) -> pd.DataFram
                 sigma_d=cfg.delta_d / 2,
             )
             if not res.feasible:
-                # 不可行是指最大似然搜索找不到任何满足几何约束的候选, 也就是定位失败.
-                # 这种情况的误差按区域对角线算, 同时单独计数.
+                # 不可行是指最大似然搜索找不到任何满足几何约束的候选, 也就是定位失败
+                # 这种情况的误差按区域对角线算, 同时单独计数
                 infeasible += 1
                 errs.extend([REGION * np.sqrt(2)] * k)
                 continue
@@ -160,11 +161,11 @@ def exp_error_prob_vs_K(trials: int, bandwidth: float, seed: int) -> pd.DataFram
         if errs_a.size == 0:
             continue
         # 把普通定位行为和灾难性失败分开统计. 灾难性失败指关联配错,
-        # 目标被甩到区域另一头. 两种指标并列给出.
+        # 目标被甩到区域另一头. 两种指标并列给出
         # 判据: 关联正确时重建出的位置误差在 Delta_d 的几倍以内, 因为最大似然
-        # 的目标函数是 M 个残差之和, 每个残差上限大约就是 Delta_d.
-        # 所以误差超过量化下限的若干倍就算灾难性失败.
-        # 另设 5 米的下限, 免得带宽特别宽时这个判据变得没有意义.
+        # 的目标函数是 M 个残差之和, 每个残差上限大约就是 Delta_d
+        # 所以误差超过量化下限的若干倍就算灾难性失败
+        # 另设 5 米的下限, 免得带宽特别宽时这个判据变得没有意义
 
         gate = max(20.0 * cfg.delta_d, 5.0)
         clean = errs_a[errs_a < gate]
@@ -268,7 +269,7 @@ def _association_is_true(
     """`cand` 这个候选能否重建出真实目标位置?"""
     if not association_consistent(cand, bs_xy, tol=1e-6):
         return False
-    from isac_dfs.phase2_localize import refine_position
+    from phase2_localize import refine_position
 
     x, _ = refine_position(cand, bs_xy)
     k = clean.shape[1]
@@ -281,13 +282,13 @@ def _association_is_true(
 
 
 def _reconstruct_targets(clean: np.ndarray, bs_xy: np.ndarray, tol: float = 1e-3):
-    """返回由一致对角结构可推出的真实目标位置.
+    """返回由一致对角结构可推出的真实目标位置
 
     测距完美时, 真实目标恰好就是那些一致的对角关联, 也就是每个基站都取
     同一列 k 得到的距离组合. 把这些位置重建出来, 与其中之一重合的候选
-    就不算鬼影.
+    就不算鬼影
     """
-    from isac_dfs.phase2_localize import refine_position
+    from phase2_localize import refine_position
 
     k = clean.shape[1]
     pts = []
@@ -302,10 +303,10 @@ def _reconstruct_targets(clean: np.ndarray, bs_xy: np.ndarray, tol: float = 1e-3
 def _has_ghost_efficient(
     clean: np.ndarray, bs_xy: np.ndarray, tol: float = 1e-6
 ) -> bool:
-    """不必枚举 K!^(M-1) 种置换就能检出鬼影目标.
+    """不必枚举 K!^(M-1) 种置换就能检出鬼影目标
 
-    鬼影的定义: 存在一组下标 (i_1..i_M), 每个 i_m 落在 1..K 之间,
-    对应的 M 个圆交于一点 (一致), 但那个点不是任何真实目标.
+    鬼影的定义: 存在一组下标(i_1..i_M), 每个 i_m 落在 1..K 之间,
+    对应的 M 个圆交于一点(一致), 但那个点不是任何真实目标
 
     与其把所有组合都试一遍, 不如利用一致性本身是个很强的几何约束:
     三个基站只要一致就已经定出一个点, 这个点不是真目标就是鬼影. 所以
@@ -313,13 +314,13 @@ def _has_ghost_efficient(
       1. 先在前 3 个基站上枚举三元组, 最多 K^3 个, K=6 时也才 216 个;
       2. 留下既一致又不是真实目标的;
       3. 剩下的基站直接按 |x_ghost - a_m| == d 反查该站哪个距离对得上,
-         每个基站 O(K) 就够.
+         每个基站 O(K) 就够
 
     这样能覆盖所有"新三元组"引出的鬼影. 还有一种情况: 前三个基站的
     距离碰巧构成真实目标, 此时若还闭合, 后面几个基站就必须与真目标
-    不一致, 这种情况在下面单独检查.
+    不一致, 这种情况在下面单独检查
     """
-    from isac_dfs.phase2_localize import refine_position
+    from phase2_localize import refine_position
 
     m_bs, k = clean.shape
     genuine = _reconstruct_targets(clean, bs_xy)
@@ -353,10 +354,10 @@ def _has_ghost_efficient(
 
 
 def exp_ghost_prob_vs_K(trials: int, seed: int, bandwidth: float = 100e6) -> pd.DataFrame:
-    """完美测距下的鬼影目标概率( 论文 Sec. V).
+    """完美测距下的鬼影目标概率(论文 Sec. V)
 
     用上面那个快速检测器. 朴素的 K!^(M-1) 置换枚举在 M=6, K=6 时有
-    2e14 种组合, 根本跑不完.
+    2e14 种组合, 根本跑不完
     """
     rows: List[Dict] = []
     for m_bs in (3, 4, 6):
@@ -545,7 +546,7 @@ def main() -> int:
     def save(df: pd.DataFrame, name: str) -> None:
         path = DATA / f"{name}{tag}.csv"
         # 保护: 不覆盖 300 次样本的正式结果.小样本试跑必须带 --tag,
-        # 否则文件名会撞上正式结果, 把真实数据冲掉.
+        # 否则文件名会撞上正式结果, 把真实数据冲掉
         if tag == "" and args.trials < REFERENCE_TRIALS and path.exists():
             raise SystemExit(
                 f"拒绝写入 {path.name}：当前只跑 {args.trials} 次，"

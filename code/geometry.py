@@ -48,10 +48,10 @@ def random_geometry(
 
 
 def select_bs_subset(geom: Geometry, n_select: int = 3) -> Tuple[Geometry, np.ndarray]:
-    """重排基站, 让前 n_select 个是条件数最好的.
+    """重排基站, 让前 n_select 个是条件数最好的
 
     官方 MATLAB 的 model.m 做法是选三个两两距离最接近的基站,
-    也就是最小化三角形边长的离散程度, 这样三边定位数值稳定; 这里复现该启发式.
+    也就是最小化三角形边长的离散程度, 这样三边定位数值稳定; 这里复现该启发式
     """
     d = geom.bs_to_bs()  # 站间距离表
     m = geom.n_bs
@@ -72,10 +72,10 @@ def select_bs_subset(geom: Geometry, n_select: int = 3) -> Tuple[Geometry, np.nd
 
 
 def has_range_collision(estimated_ranges: np.ndarray, tol: float = 0.0) -> bool:
-    """若任一基站看到两个目标落在同一个距离单元里, 返回 True.
+    """若任一基站看到两个目标落在同一个距离单元里, 返回 True
 
     论文假设每个基站的 K 条路径可分辨, 也就是两个不同目标的距离差要大于
-    2*Delta_d; 违反该假设的几何在蒙特卡洛循环里会被丢弃, 和 model.m 一致.
+    2*Delta_d; 违反该假设的几何在蒙特卡洛循环里会被丢弃, 和 model.m 一致
     """
     m = estimated_ranges.shape[0]
     for i in range(m):
@@ -91,10 +91,10 @@ def add_laplace_or_uniform_errors(
     delta_d: float,
     model: str = "quantization",
 ) -> np.ndarray:
-    """给干净的真实距离套一个误差模型.
+    """给干净的真实距离套一个误差模型
 
-    论文名义上的阶段一误差是式 (7) 的量化误差, 确定性且上界为
-    Delta_d = c0/(4*N*df); 带宽扫描时精确复现该模型, uniform 作为鲁棒性检查.
+    论文名义上的阶段一误差是式(7) 的量化误差, 确定性且上界为
+    Delta_d = c0/(4*N*df); 带宽扫描时精确复现该模型, uniform 作为鲁棒性检查
     """
     if model == "quantization":
         return clean_ranges  # 量化误差已经在距离里了, 不用再加
@@ -104,11 +104,11 @@ def add_laplace_or_uniform_errors(
 
 
 def trilaterate_linear(ranges: np.ndarray, bs_xy: np.ndarray) -> np.ndarray:
-    """线性最小二乘三边定位, 对应论文的 initial_est.m.
+    """线性最小二乘三边定位, 对应论文的 initial_est.m
 
     求解使 || |x - a_i|^2 - r_i^2 || 最小的点 x, 先线性化成 A x = R 的形式;
-    用前三个基站定义 A( 与 MATLAB 代码一致), 基站数大于 3 时其余站都参与贡献.
-    退化时回退到只在前 3 个基站上做纯线性求解, 与官方实现一致.
+    用前三个基站定义 A(与 MATLAB 代码一致), 基站数大于 3 时其余站都参与贡献
+    退化时回退到只在前 3 个基站上做纯线性求解, 与官方实现一致
     """
     a1, b1 = bs_xy[0]  # 第一个基站坐标
     a2, b2 = bs_xy[1]  # 第二个

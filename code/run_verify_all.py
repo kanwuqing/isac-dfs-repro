@@ -1,7 +1,7 @@
 """把几个验证脚本挨个跑一遍, 结果存日志
 
 四个脚本从快到慢排: 前两个几秒到二十几秒, 后两个枚举暴力解,
-K=5 那几例单次就要两三秒. --fast 只跑前两个, 现场演示用.
+K=5 那几例单次就要两三秒. --fast 只跑前两个, 现场演示用
 
     python scripts/run_verify_all.py
     python scripts/run_verify_all.py --fast
@@ -17,7 +17,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 LOGS = ROOT / "logs"
 
 # (脚本名, 超时秒数). 后两个吃时间, 给到半小时
@@ -58,7 +59,7 @@ def main() -> int:
     rows = []
     try:
         for name, timeout in tasks:
-            script = ROOT / "scripts" / name
+            script = HERE / name
             say(f"\n{'=' * 70}\n{name}\n{'=' * 70}\n")
 
             t0 = time.time()

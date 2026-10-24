@@ -20,8 +20,9 @@ import sys
 import tokenize
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-SRC_DIRS = [ROOT / "src", ROOT / "scripts"]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+SRC_DIRS = [HERE]
 SKIP = {"check_style.py"}
 
 FULLWIDTH_PUNCT = "\uff0c\uff1b\uff1a\uff08\uff09\uff01\uff1f\u3002\u3001"

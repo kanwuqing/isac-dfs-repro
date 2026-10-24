@@ -1,4 +1,4 @@
-"""OFDM 蜂窝网络无设备感知 —— 复现代码包.
+"""OFDM 蜂窝网络无设备感知 —— 复现代码包
 
 复现的论文:
     Q. Shi, L. Liu, S. Zhang, and S. Cui, "Device-Free Sensing in OFDM
@@ -11,9 +11,9 @@ phase2_localize   阶段二, 鬼影目标, 最大似然数据关联, 定位
 geometry          两个阶段共用的几何工具
 """
 
-from .phase1_range import OFDMConfig, phase1_range_estimation
-from .phase2_localize import ml_data_association, pairwise_position_errors
-from .geometry import Geometry, random_geometry
+from phase1_range import OFDMConfig, phase1_range_estimation
+from phase2_localize import ml_data_association, pairwise_position_errors
+from geometry import Geometry, random_geometry
 
 __version__ = "1.0.0"
 
